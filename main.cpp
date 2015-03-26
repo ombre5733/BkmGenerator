@@ -324,7 +324,8 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
          << "        output " << cfg.dataType() << " L_out_i,\n"
          << "        output " << cfg.dataType() << " E_out_r,\n"
          << "        output " << cfg.dataType() << " E_out_i,\n"
-         << "        output bit outputValid\n"
+         << "        output bit outputValid,\n"
+         << "        output bit outOfRange\n"
          << "       );\n\n";
 
     file << "    // L-mode algorithm\n"
@@ -495,7 +496,7 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
          << "        State_Expand_RotationByAtanMinus1Div2,\n"
          << "        State_Expand_RescaleAndNormalizeAngle,\n"
 
-         << "        State_SetUnderflow,\n"
+         << "        State_SetOutOfRange,\n"
          << "        State_Output\n"
          << "    } State_t;\n\n";
     file << "    State_t state, nextState;\n\n";
@@ -533,7 +534,7 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
          << "            State_Reduce_ScaleMagnitude:\n"
          << "            begin\n"
          << "                if (wL_r_underflow || wL_r_overflow)\n"
-         << "                    nextState <= State_SetUnderflow;\n"
+         << "                    nextState <= State_SetOutOfRange;\n"
          << "                else if (wL_r_too_low || wL_r_too_high)\n"
          << "                    nextState <= State_Reduce_ScaleMagnitude;\n"
          << "                else\n"
@@ -564,7 +565,7 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
          << "            State_Expand_RescaleAndNormalizeAngle:\n"
          << "                nextState <= (wE_i_too_low || wE_i_too_high) ? State_Expand_RescaleAndNormalizeAngle : State_Output;\n\n"
 
-         << "            State_SetUnderflow:\n"
+         << "            State_SetOutOfRange:\n"
          << "                nextState <= State_Output;\n\n"
 
          << "            State_Output:\n"
@@ -825,9 +826,12 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
          << "                rEk_i <= `AssignDelay rEk_i - CONST_PI;\n"
          << "        end\n"
 
-         << "        else if (state == State_SetUnderflow)\n"
+         << "        else if (state == State_SetOutOfRange)\n"
          << "        begin\n"
-         << "            rEk_r <= `AssignDelay '0;\n" // TODO: Use the maximum negative value here
+         << "            if (wL_r_underflow)\n"
+         << "                rEk_r <= `AssignDelay {1'b1, '0};\n"
+         << "            else\n"
+         << "                rEk_r <= `AssignDelay {1'b0, '1};\n"
          << "            rEk_i <= `AssignDelay '0;\n"
          << "        end\n"
 
@@ -977,6 +981,16 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
          << "            outputValid <= `AssignDelay 1'b0;\n"
          << "    end\n\n";
 
+    file << "    always_ff @(posedge clock or negedge reset_n)\n"
+         << "    begin\n"
+         << "        if (!reset_n)\n"
+         << "            outOfRange <= `AssignDelay 1'b0;\n"
+         << "        else if (state == State_WaitForInput)\n"
+         << "            outputValid <= `AssignDelay 1'b0;\n"
+         << "        else if (state == State_SetOutOfRange)\n"
+         << "            outOfRange <= `AssignDelay 1'b1;\n"
+         << "    end\n\n";
+
     file << "    assign E_out_r = rEk_r;\n"
          << "    assign E_out_i = rEk_i;\n"
          << "    assign L_out_r = rLk_r;\n"
@@ -1013,7 +1027,8 @@ void testbench(const Config& cfg)
          << "bit signed [3:-12] L_out_i;\n"
          << "bit signed [3:-12] E_out_r;\n"
          << "bit signed [3:-12] E_out_i;\n"
-         << "bit outputValid;\n\n";
+         << "bit outputValid;\n"
+         << "bit outOfRange;\n\n";
 
     file << "BkmLComputer DUT(.*);\n\n";
 

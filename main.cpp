@@ -355,19 +355,8 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
     file << "    //     Constants\n";
     file << "    // ----============================================================----\n\n";
 
-    file << "    // Convergence bounds of the real part.\n"
-         << "    localparam " << cfg.dataType() << " CONST_0_64 = " << cfg.format(lowerConvergenceBound) << ";\n"
-         << "    localparam " << cfg.dataType() << " CONST_1_40 = " << cfg.format(upperConvergenceBound) << ";\n\n";
-
-    file << "    // The bounds which we have to process during the scaling stage in the reduction phase.\n"
-         << "    localparam " << cfg.dataType() << " CONST_UNDERFLOW_THRESHOLD = "
-         << cfg.format(underflowThreshold) << ";\n";
-    if (overflowThreshold > 0)
-    {
-         file << "    localparam " << cfg.dataType() << " CONST_OVERFLOW_THRESHOLD = "
-              << cfg.format(overflowThreshold) << ";\n";
-    }
-    file << "\n";
+    file << "    // 1.0 in fixed point format.\n"
+         << "    localparam " << cfg.dataType() << " CONST_1 = " << cfg.format(cfg.fixed(1)) << ";\n\n";
 
     file << "    // Pi and fractions thereof.\n"
          << "    localparam " << cfg.dataType() << " CONST_PI   = " << cfg.format(cfg.fixed(pi)) << ";\n"
@@ -383,6 +372,20 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
          << "    // atan(1/2)\n"
          << "    localparam "<< cfg.dataType() << " CONST_ATAN_1_2 = "
          << cfg.format(cfg.fixed(atan(1.0 / 2.0))) << ";\n\n";
+
+    file << "    // Convergence bounds of the real part.\n"
+         << "    localparam " << cfg.dataType() << " CONST_0_64 = " << cfg.format(lowerConvergenceBound) << ";\n"
+         << "    localparam " << cfg.dataType() << " CONST_1_40 = " << cfg.format(upperConvergenceBound) << ";\n\n";
+
+    file << "    // The bounds which we have to process during the scaling stage in the reduction phase.\n"
+         << "    localparam " << cfg.dataType() << " CONST_UNDERFLOW_THRESHOLD = "
+         << cfg.format(underflowThreshold) << ";\n";
+    if (overflowThreshold > 0)
+    {
+         file << "    localparam " << cfg.dataType() << " CONST_OVERFLOW_THRESHOLD = "
+              << cfg.format(overflowThreshold) << ";\n";
+    }
+    file << "\n";
 
     file << "    // ----============================================================----\n";
     file << "    //     Lookup table\n";
@@ -938,7 +941,7 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
 
          << "        else if (state == State_Compute_InitStage1)\n"
          << "        begin\n"
-         << "            rLk_r <= `AssignDelay rLk_r - " << cfg.format(cfg.fixed(1)) << ";\n"
+         << "            rLk_r <= `AssignDelay rLk_r - CONST_1;\n"
          << "        end\n"
          << "        else if (state == State_Compute_InitStage2)\n"
          << "        begin\n"
@@ -948,10 +951,10 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
          << "        else if (state == State_Compute_Stage2)\n"
          << "        begin\n"
          << "            // L_k = L_k + d_k\n"
-         << "            if      (rD_r & Dk_N) rLk_r <= `AssignDelay rLk_r - " << cfg.format(cfg.fixed(1)) << ";\n"
-         << "            else if (rD_r & Dk_P) rLk_r <= `AssignDelay rLk_r + " << cfg.format(cfg.fixed(1)) << ";\n\n"
-         << "            if      (rD_i & Dk_N) rLk_i <= `AssignDelay rLk_i - " << cfg.format(cfg.fixed(1)) << ";\n"
-         << "            else if (rD_i & Dk_P) rLk_i <= `AssignDelay rLk_i + " << cfg.format(cfg.fixed(1)) << ";\n"
+         << "            if      (rD_r & Dk_N) rLk_r <= `AssignDelay rLk_r - CONST_1;\n"
+         << "            else if (rD_r & Dk_P) rLk_r <= `AssignDelay rLk_r + CONST_1;\n\n"
+         << "            if      (rD_i & Dk_N) rLk_i <= `AssignDelay rLk_i - CONST_1;\n"
+         << "            else if (rD_i & Dk_P) rLk_i <= `AssignDelay rLk_i + CONST_1;\n"
          << "        end\n"
          << "        else if (state == State_Compute_Stage3)\n"
          << "        begin\n"

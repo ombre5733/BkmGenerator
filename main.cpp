@@ -408,6 +408,7 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
         return rightJustify(cfg.format(cfg.fixed(std::atan(1.0 / (pow + dr)))));
     };
 
+    file << "    // A lookup table for various BKM factors\n";
     file << "    " << cfg.dataType() << " LUT_BKM[" << bkmLookupSize << "] = '{";
     for (int i = 1; i <= numIter; ++i)
     {
@@ -425,7 +426,8 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
     }
     file << "};\n\n";
 
-    file << "    " << cfg.dataType() << " LUT_LOG_POW2[" << requiredShifts + 1 << "] = '{";
+    file << "    // A lookup table for log(2^i)\n"
+         << "    " << cfg.dataType() << " LUT_LOG_POW2[" << requiredShifts + 1 << "] = '{";
     for (int i = 0; i <= requiredShifts; ++i)
     {
         if (i != 0)
@@ -666,7 +668,7 @@ void lModeComputer(std::ofstream& file, const Config& cfg)
          << "        begin\n"
          << "            // Note: We should fetch rLnValue in this stage.\n"
          << "            // We fetch into rArctanValue and copy to rLnValue later on in\n"
-         << "            // the hope that during synthesis a block ram will be inferred.\n"
+         << "            // the hope that during synthesis a block RAM will be inferred.\n"
          << "            if (rD_r & Dk_N)\n"
          << "            begin\n"
          << "                if (rD_i & Dk_0) rArctanValue <= `AssignDelay LUT_BKM[" << lookupOffset.name << " + 4'd0];\n"
